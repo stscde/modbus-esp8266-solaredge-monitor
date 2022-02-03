@@ -437,7 +437,10 @@ void printStateScreen2(char *sunPowerStr, char *houseUsagePower, char *meterPowe
     display.fillRect(BATT_X, BATT_Y, (int)width, BATT_HEIGHT, SSD1306_WHITE);
 
     // print battery power flow arrow
-    if (batteryPowerKw != 0.0f) {
+    long batteryPowerWAbs = batteryPowerKw > 0 ? batteryPowerKw * 1000 :  batteryPowerKw * -1000;
+    // Serial.print("battery power w: ");
+    // Serial.println(batteryPowerWAbs);
+    if (batteryPowerWAbs > 9) {
         display.fillRect(28, 29, 9, 6, SSD1306_BLACK);
         if (batteryPowerKw < 0) {
             display.drawBitmap(29, 31, img_arr_up_7x3, 7, 3, 1);
@@ -460,14 +463,21 @@ void printStateScreen2(char *sunPowerStr, char *houseUsagePower, char *meterPowe
     display.setCursor(98, 55);
     display.println("  kW");
 
+    long meterPowerWAbs = meterPowerKwAbs * 1000;
     // print meter power flow arrow
-    if (meterPowerKwAbs > 0.009f) {
+    if (meterPowerWAbs > 9) {
+        // Serial.print("meter active w: ");
+        // Serial.println(meterPowerWAbs);
         display.fillRect(95, 29, 9, 6, SSD1306_BLACK);
-        if (meterPowerKw > 0) {
+        if (meterPowerKw < 0) {
             display.drawBitmap(96, 31, img_arr_up_7x3, 7, 3, 1);
         } else {
             display.drawBitmap(96, 31, img_arr_down_7x3, 7, 3, 1);
         }
+    }
+    else {
+        Serial.print("meter inactive w: ");
+        Serial.println(meterPowerWAbs);
     }
 
     display.display();
