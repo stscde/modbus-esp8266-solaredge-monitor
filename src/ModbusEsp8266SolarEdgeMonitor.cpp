@@ -12,59 +12,59 @@
 #include <SPI.h>
 #include <Wire.h>
 
-#define SCREEN_WIDTH 128  // OLED display width, in pixels
-#define SCREEN_HEIGHT 64  // OLED display height, in pixels
 
-// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
-// The pins for I2C are defined by the Wire-library.
-// On an arduino UNO:       A4(SDA), A5(SCL)
-// On an arduino MEGA 2560: 20(SDA), 21(SCL)
-// On an arduino LEONARDO:   2(SDA),  3(SCL), ...
-#define OLED_RESET 0         // Reset pin # (or -1 if sharing Arduino reset pin)
-#define SCREEN_ADDRESS 0x3C  ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-const char *VERSION = "2.2.0";
+// ### Network and modbus #####################################################
+// ############################################################################
 
-// Modifying the config version will probably cause a loss of the existig configuration.
-// Be careful!
-const char *CONFIG_VERSION = "1.0.2";
-
-const char *WIFI_AP_SSID = "SolarEdgeMonitor";
-const char *WIFI_AP_DEFAULT_PASSWORD = "";
-
-// -- Method declarations.
-void handleRoot();
-
+// Name server
 DNSServer dnsServer;
+
+// Web server
 WebServer server(80);
 
+// IP of the SolarEdge inverter
+IPAddress remote;
+
+// Modbus port of the SolarEdge inverter
+int port = -1;
+
+// ModbusIP object
+ModbusIP mb;
+
+// Modbus SolarEdge helper
+ModbusSolarEdge mbse;
+
+
+// ### IotWebConf #############################################################
+// ############################################################################
+
+// Is a reset required?
 boolean needReset = false;
+
+// Is wifi connected?
 boolean connected = false;
+
+// IotWebConf: Modifying the config version will probably cause a loss of the existig configuration. Be careful!
+const char *CONFIG_VERSION = "1.0.2";
+
+// IotWebConf: Access point SSID
+const char *WIFI_AP_SSID = "SolarEdgeMonitor";
+
+// IotWebConf: Default access point password
+const char *WIFI_AP_DEFAULT_PASSWORD = "";
+
+// IotWebConf: Method for handling access to / on web config
+void handleRoot();
+
+// IotWebConf: Called when connection to wifi was established
+void wifiConnected();
+
+// IotWebConf: Called when configuration saved
+void configSaved();
 
 // last known WiFi network state
 iotwebconf::NetworkState lastNetWorkState = iotwebconf::NetworkState::OffLine;
-
-// which screen is currently shown
-enum CurrentScreen {
-    None,
-    WifiState,
-    Solar1,
-    Solar2
-};
-
-// at boot time no screen is shown
-CurrentScreen lastScreen = None;
-
-void printStateScreen(char *line1, char *line2, char *line3 = nullptr, char *line4 = nullptr);
-void printStateScreen2(char *sunPowerStr, char *line2, char *line3 = nullptr, char *line4 = nullptr, char *batteryLevelOfEnergy = nullptr, float batteryLevelOfEnergyPct = 0.0f, float sunPowerPowerKw = 0.0f, float meterPowerKw = 0.0f, float houseUsagePowerKw = 0.0f, float batteryPowerKw = 0.0f, float i_ac_power_norm = 0.0f);
-void printWifiState();
-void wifiConnected();
-void configSaved();
-void printUsage();
-float round(float f);
-void handleClick();
-void handleDoubleClick();
 
 IotWebConf iotWebConf(WIFI_AP_SSID, &dnsServer, &server, WIFI_AP_DEFAULT_PASSWORD, CONFIG_VERSION);
 
@@ -79,17 +79,28 @@ IotWebConfTextParameter inverterIpAddressParam = IotWebConfTextParameter("Invert
 char inverterPortParamValue[32];
 IotWebConfNumberParameter inverterPortParam = IotWebConfNumberParameter("Inverter Port", "inverterPort", inverterPortParamValue, 32, "1502", "1..65535", "min='1' max='65535' step='1'");
 
-// IP of the SolarEdge inverter
-IPAddress remote;
 
-// Modbus port of the SolarEdge inverter
-int port = -1;
+// ### Screens ################################################################
+// ############################################################################
 
-// ModbusIP object
-ModbusIP mb;
+#define SCREEN_WIDTH 128  // OLED display width, in pixels
+#define SCREEN_HEIGHT 64  // OLED display height, in pixels
 
-// Modbus SolarEdge helper
-ModbusSolarEdge mbse;
+// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
+#define OLED_RESET 0         // Reset pin # (or -1 if sharing Arduino reset pin)
+#define SCREEN_ADDRESS 0x3C  ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+// which screen is currently shown
+enum CurrentScreen {
+    None,
+    WifiState,
+    Solar1,
+    Solar2
+};
+
+// At boot time no screen is shown
+CurrentScreen lastScreen = None;
 
 // Time since display is on
 long displayOnSince;
@@ -100,15 +111,55 @@ const int DISPLAY_OFF_AFTER_MINS = 15;
 // Time since last display update
 long lastDisplayUpdateTime = 0;
 
+// Update interval for display
 const int DISPLAY_UPDATE_INTERVAL_SECS = 5;
 
+// Is the display on?
 boolean displayOn = true;
+
+// Print graphical screen with solar power, battery power, house usage and grid consumption
+void printStateScreen1(char *sunPowerStr, char *houseUsagePower, char *meterPower = nullptr, char *batteryPower = nullptr, char *batteryLevelOfEnergy = nullptr, float batteryLevelOfEnergyPct = 0.0f, float sunPowerPowerKw = 0.0f, float meterPowerKw = 0.0f, float houseUsagePowerKw = 0.0f, float batteryPowerKw = 0.0f, float i_ac_power_norm = 0.0f);
+
+// Prints a simple 4 lined screen used for multiple purposes
+void printStateScreen2(char *line1, char *line2, char *line3 = nullptr, char *line4 = nullptr);
+
+// Print wifi state screen
+void printWifiState();
+
+// Main method for printing solar system usage values
+void printUsage();
+
+
+// ### OneButton ##############################################################
+// ############################################################################
+
+// OneButton: Handle single click
+void handleClick();
+
+// OneButton: Handle double click
+void handleDoubleClick();
+
+// OneButton: Handle long press stop
+void handleLongPressStop();
 
 OneButton btn = OneButton(
     D5,     // Input pin for the button
     false,  // Button is active LOW
     false   // Enable internal pull-up resistor
 );
+
+// Count how many times the button was pressed for a long time
+int longPressCount = 0;
+
+// ### Other method declarations ##############################################
+// ############################################################################
+
+// Helper method for rounding
+float round(float f);
+
+
+// ### Images #################################################################
+// ############################################################################
 
 // '211105_solaredige_mon_screen', 128x64px
 const unsigned char img_background[] PROGMEM = {
@@ -188,13 +239,17 @@ const unsigned char img_arr_up_7x3[] PROGMEM = {
 const unsigned char img_arr_down_7x3[] PROGMEM = {
     0x7c, 0x38, 0x10};
 
+
+// ### Setup ##################################################################
+// ############################################################################
+
 void setup() {
     Serial.begin(115200);  // Start the Serial communication to send messages to the computer
     delay(10);
     Serial.println("Starting up...");
 
     // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
-    if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {  // Address 0x3D for 128x64
+    if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {  // Address 0x3C for 128x64
         Serial.println(F("SSD1306 allocation failed"));
         for (;;)
             ;  // Don't proceed, loop forever
@@ -213,6 +268,7 @@ void setup() {
     iotWebConf.setWifiConnectionCallback(&wifiConnected);
     iotWebConf.setConfigSavedCallback(&configSaved);
     iotWebConf.setStatusPin(LED_BUILTIN);
+    //iotWebConf.setConfigPin(D5);
     iotWebConf.init();
 
     // -- Set up required URL handlers on the web server.
@@ -223,9 +279,14 @@ void setup() {
 
     btn.attachClick(handleClick);
     btn.attachDoubleClick(handleDoubleClick);
+    btn.attachLongPressStop(handleLongPressStop);
 
     Serial.println("setup done");
 }
+
+
+// ### Main ###################################################################
+// ############################################################################
 
 void loop() {
     if (needReset) {
@@ -259,19 +320,19 @@ void loop() {
             if (!valid) {
                 line4 = "> IP is invalid";
             }
-            printStateScreen(&line1[0], &line2[0], &line3[0], &line4[0]);
+            printStateScreen2(&line1[0], &line2[0], &line3[0], &line4[0]);
             delay(2000);
 
             if (valid) {
                 boolean connected = mb.connect(remote, port);
                 line4 = connected ? "> Modbus connected" : "> Modbus conn. failed";
-                printStateScreen(&line1[0], &line2[0], &line3[0], &line4[0]);
+                printStateScreen2(&line1[0], &line2[0], &line3[0], &line4[0]);
                 delay(2000);
             }
         } else {
             if ((int)millis() > lastDisplayUpdateTime + DISPLAY_UPDATE_INTERVAL_SECS * 1000 && displayOn) {
                 // init to Solar1
-                lastScreen = lastScreen == None || lastScreen == WifiState ? Solar2 : lastScreen;
+                lastScreen = lastScreen == None || lastScreen == WifiState ? Solar1 : lastScreen;
 
                 printUsage();
 
@@ -310,6 +371,35 @@ void handleDoubleClick() {
     lastDisplayUpdateTime = 0;
 }
 
+
+void handleLongPressStop() {
+    longPressCount++;
+
+    String line1 = "Reset configuration";
+    String line2 = "";
+    String line3 = "";
+
+    if (longPressCount == 1) {
+        line2 = "Press again to reset";
+        printStateScreen2(&line1[0], &line2[0], &line3[0]);
+        delay(5000);
+    }
+    else {
+        line2 = "Reset started";
+        printStateScreen2(&line1[0], &line2[0], &line3[0]);
+        iotWebConf.getSystemParameterGroup()->applyDefaultValue();
+        iotWebConf.saveConfig();
+        needReset = true;
+        delay(2000);
+
+        line2 = "Config erased";
+        line3 = "Rebooting";
+        printStateScreen2(&line1[0], &line2[0], &line3[0]);
+        delay(5000);
+    }
+
+}
+
 void configSaved() {
     Serial.println("config saved");
     needReset = true;
@@ -318,6 +408,10 @@ void configSaved() {
 void wifiConnected() {
     connected = true;
     Serial.println("wifi connected");
+
+    // hack for getting hostname set correctly
+    WiFi.hostname(iotWebConf.getThingName());
+    WiFi.begin();
 }
 
 void printWifiState() {
@@ -345,14 +439,14 @@ void printWifiState() {
         }
 
         String initString = "Init WiFi connection";
-        printStateScreen(&initString[0], &state[0]);
+        printStateScreen2(&initString[0], &state[0]);
 
         lastNetWorkState = iotWebConf.getState();
         lastScreen = WifiState;
     }
 }
 
-void printStateScreen(char *line1, char *line2, char *line3, char *line4) {
+void printStateScreen2(char *line1, char *line2, char *line3, char *line4) {
     display.clearDisplay();
 
     display.setTextSize(1);
@@ -377,7 +471,7 @@ void printStateScreen(char *line1, char *line2, char *line3, char *line4) {
     delay(500);
 }
 
-void printStateScreen2(char *sunPowerStr, char *houseUsagePower, char *meterPower, char *batteryPower, char *batteryLevelOfEnergy, float batteryLevelOfEnergyPct, float sunPowerPowerKw, float meterPowerKw, float houseUsagePowerKw, float batteryPowerKw, float i_ac_power_norm) {
+void printStateScreen1(char *sunPowerStr, char *houseUsagePower, char *meterPower, char *batteryPower, char *batteryLevelOfEnergy, float batteryLevelOfEnergyPct, float sunPowerPowerKw, float meterPowerKw, float houseUsagePowerKw, float batteryPowerKw, float i_ac_power_norm) {
     display.clearDisplay();
 
     display.drawBitmap(0, 0, img_background, 128, 64, 1);
@@ -437,7 +531,7 @@ void printStateScreen2(char *sunPowerStr, char *houseUsagePower, char *meterPowe
     display.fillRect(BATT_X, BATT_Y, (int)width, BATT_HEIGHT, SSD1306_WHITE);
 
     // print battery power flow arrow
-    long batteryPowerWAbs = batteryPowerKw > 0 ? batteryPowerKw * 1000 :  batteryPowerKw * -1000;
+    long batteryPowerWAbs = batteryPowerKw > 0 ? batteryPowerKw * 1000 : batteryPowerKw * -1000;
     // Serial.print("battery power w: ");
     // Serial.println(batteryPowerWAbs);
     if (batteryPowerWAbs > 9) {
@@ -474,8 +568,7 @@ void printStateScreen2(char *sunPowerStr, char *houseUsagePower, char *meterPowe
         } else {
             display.drawBitmap(96, 31, img_arr_down_7x3, 7, 3, 1);
         }
-    }
-    else {
+    } else {
         Serial.print("meter inactive w: ");
         Serial.println(meterPowerWAbs);
     }
@@ -581,12 +674,16 @@ void printUsage() {
     Serial.println(lastScreen);
 
     if (lastScreen == Solar1) {
-        printStateScreen(&line1[0], &line2[0], &line3[0], &line4[0]);
+        printStateScreen1(&sunPowerStr[0], &houseUsagePower[0], &meterPower[0], &batteryPower[0], &batteryLevelOfEnergy[0], batterySOE, sunPowerPowerKw, meterPowerKw, houseUsagePowerKw, batteryPowerKw, i_ac_power_norm);
     } else {
-        printStateScreen2(&sunPowerStr[0], &houseUsagePower[0], &meterPower[0], &batteryPower[0], &batteryLevelOfEnergy[0], batterySOE, sunPowerPowerKw, meterPowerKw, houseUsagePowerKw, batteryPowerKw, i_ac_power_norm);
+        printStateScreen2(&line1[0], &line2[0], &line3[0], &line4[0]);
     }
 }
 
+/**
+ * Rounds a value up to the second decimal fraction
+ * @param f value to round
+ */
 float round(float f) {
     int sign = f < 0 ? -1 : 1;
     f = f * sign;
