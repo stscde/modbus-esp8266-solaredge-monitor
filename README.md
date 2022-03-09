@@ -4,12 +4,11 @@ This project builds a hardware monitor to show values from a SolarEdge inverter 
 
 Here is a picture of the assembled monitor showing solar data.
 
-![Front view](misc/images/front_view.jpg | width="50%")
-<img src="misc/images/front_view.jpg" width="50%" />
+<img src="misc/images/front_view.jpg" width="50%" alt="Front view" />
 
 This is how the back looks like. There is a hole for connecting the monitor with USB to power or programm it.
 
-![Back view](https://github.com/stscde/modbus-esp8266-solaredge-monitor/blob/main/misc/images/back_view.jpg)
+<img src="misc/images/back_view.jpg" width="50%" alt="Back view" />
 
 
 ## Features
