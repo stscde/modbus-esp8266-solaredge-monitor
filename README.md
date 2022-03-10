@@ -1,4 +1,4 @@
-# SolarEdge Modbus Monitor for ESP8266 tiss
+# SolarEdge Modbus Monitor for ESP8266
 
 This project builds a hardware monitor to show values from a SolarEdge inverter on an OLED 0.96" display.
 
@@ -42,8 +42,8 @@ Required parts
 
 The following image shows the components and their wiring.
 
-![Electric components and wiring](https://github.com/stscde/modbus-esp8266-solaredge-monitor/blob/fritzing/solaredge_monitor.svg)
-<img src="https://github.com/stscde/modbus-esp8266-solaredge-monitor/blob/fritzing/solaredge_monitor.svg">
+![Electric components and wiring](misc/fritzing/solaredge_monitor.svg)
+<img src="misc/fritzing/solaredge_monitor.svg">
 
 
 ## Configuration
