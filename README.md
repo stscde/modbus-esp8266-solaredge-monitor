@@ -43,7 +43,6 @@ Required parts
 The following image shows the components and their wiring.
 
 ![Electric components and wiring](misc/fritzing/solaredge_monitor.svg)
-<img src="misc/fritzing/solaredge_monitor.svg">
 
 
 ## Configuration
@@ -53,7 +52,7 @@ In both states the monitor opens an WiFi access point with SSID "SolarEdgeMonito
 
 After the connection has been established the following config screen is shown. Fill in the values according to your environment.
 
-![Config screen](https://github.com/stscde/modbus-esp8266-solaredge-monitor/blob/images/config_screen.PNG)
+![Config screen](misc/images/config_screen.PNG)
 
 * Thing name: Name of the monitor in the network
 * AP password: Password of the monitor´s access point. Will be required when you reconnect to the monitor after completing the configuration.
@@ -83,7 +82,7 @@ There are two screens available at the moment which can be toggled by double cli
 
 Screen 1 is made up of four quadrants.
 
-![Screen 1](https://github.com/stscde/modbus-esp8266-solaredge-monitor/blob/images/screen_1.jpg)
+![Screen 1](misc/images/screen_1.jpg)
 
 * Top left - sun: shows the current power the inverter produces from the solar panels
 * Bottom left - battery: shows the power transfered to (loading) and from the battery (discharging) and the fill grade of the battery.
