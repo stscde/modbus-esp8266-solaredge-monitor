@@ -17,6 +17,7 @@
 // ### Network and modbus #####################################################
 // ############################################################################
 
+
 // Name server
 DNSServer dnsServer;
 
@@ -155,7 +156,7 @@ int longPressCount = 0;
 // ############################################################################
 
 // Helper method for rounding
-float round(float f);
+float hlpRound(float f);
 
 
 // ### Images #################################################################
@@ -642,25 +643,25 @@ void printUsage() {
     // battery level in percent
     float b1_b_state_of_energy = mbse.readHregFloat32(mb, remote, B1_STATE_OF_ENERGY_SOE);
 
-    float sunPowerPowerKw = round(a_sun_power / 1000.0f);
+    float sunPowerPowerKw = hlpRound(a_sun_power / 1000.0f);
     char sunPowerFmt[4];
     dtostrf(sunPowerPowerKw, 4, 2, sunPowerFmt);
     String sunPowerStr(sunPowerFmt);
     String line1 = "S: " + sunPowerStr + "kW";
 
-    float houseUsagePowerKw = round(b_house_usage / 1000.0f);
+    float houseUsagePowerKw = hlpRound(b_house_usage / 1000.0f);
     char houseUsagePowerFmt[4];
     dtostrf(houseUsagePowerKw, 4, 2, houseUsagePowerFmt);
     String houseUsagePower(houseUsagePowerFmt);
     String line2 = "H: " + houseUsagePower + "kW";
 
-    float meterPowerKw = round(c_meter_power / 1000.0f);
+    float meterPowerKw = hlpRound(c_meter_power / 1000.0f);
     char meterPowerFmt[4];
     dtostrf(meterPowerKw, 4, 2, meterPowerFmt);
     String meterPower(meterPowerFmt);
     String line3 = "M: " + meterPower + "kW";
 
-    float batteryPowerKw = round(d_battery_power / 1000.0f);
+    float batteryPowerKw = hlpRound(d_battery_power / 1000.0f);
     char batteryPowerFmt[4];
     dtostrf(batteryPowerKw, 4, 2, batteryPowerFmt);
     String batteryPower(batteryPowerFmt);
@@ -684,7 +685,7 @@ void printUsage() {
  * Rounds a value up to the second decimal fraction
  * @param f value to round
  */
-float round(float f) {
+float hlpRound(float f) {
     int sign = f < 0 ? -1 : 1;
     f = f * sign;
     f += 0.005;
